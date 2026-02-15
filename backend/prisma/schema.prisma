@@ -1,0 +1,35 @@
+// Prisma schema for PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String      @id @default(uuid())
+  email             String      @unique
+  password          String
+  credits_remaining Int         @default(20)
+  plan_type         String      @default("free")
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
+  usageLogs         UsageLog[]
+
+  @@map("users")
+}
+
+model UsageLog {
+  id               String   @id @default(uuid())
+  user_id          String
+  feature_used     String
+  credits_deducted Int
+  timestamp        DateTime @default(now())
+  
+  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("usage_logs")
+}

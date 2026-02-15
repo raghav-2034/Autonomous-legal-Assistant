@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { analyzeRights } from '@/lib/api'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAuth } from '@/components/AuthContext'
 
 const severityColors = {
   Low: 'from-green-500 to-emerald-500',
@@ -13,6 +15,15 @@ const severityColors = {
 }
 
 export default function RightsAnalyzer() {
+  return (
+    <ProtectedRoute>
+      <RightsAnalyzerContent />
+    </ProtectedRoute>
+  )
+}
+
+function RightsAnalyzerContent() {
+  const { updateCredits } = useAuth()
   const [scenario, setScenario] = useState('')
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -26,9 +37,19 @@ export default function RightsAnalyzer() {
 
     try {
       const data = await analyzeRights(scenario)
+      
+      if (data.credits_remaining !== undefined) {
+        updateCredits(data.credits_remaining)
+      }
+      
       setResult(data)
     } catch (error) {
-      setResult({ error: 'Failed to analyze rights. Please try again.' })
+      const errorData = error.response?.data
+      if (errorData?.upgrade_required) {
+        setResult({ error: errorData.message, upgrade_required: true })
+      } else {
+        setResult({ error: 'Failed to analyze rights. Please try again.' })
+      }
     } finally {
       setLoading(false)
     }

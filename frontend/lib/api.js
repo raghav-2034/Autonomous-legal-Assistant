@@ -1,12 +1,27 @@
 import axios from 'axios'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'
+
+const getAuthHeader = () => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token')
+    return token ? { Authorization: `Bearer ${token}` } : {}
+  }
+  return {}
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+})
+
+// Add auth token to all requests
+api.interceptors.request.use((config) => {
+  const authHeaders = getAuthHeader()
+  config.headers = { ...config.headers, ...authHeaders }
+  return config
 })
 
 export const legalChat = async (message) => {

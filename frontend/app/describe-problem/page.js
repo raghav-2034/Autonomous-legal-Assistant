@@ -4,8 +4,19 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { describeProblem } from '@/lib/api'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAuth } from '@/components/AuthContext'
 
 export default function DescribeProblem() {
+  return (
+    <ProtectedRoute>
+      <DescribeProblemContent />
+    </ProtectedRoute>
+  )
+}
+
+function DescribeProblemContent() {
+  const { updateCredits } = useAuth()
   const [problem, setProblem] = useState('')
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -19,9 +30,23 @@ export default function DescribeProblem() {
 
     try {
       const data = await describeProblem(problem)
+      
+      // Update credits if returned
+      if (data.credits_remaining !== undefined) {
+        updateCredits(data.credits_remaining)
+      }
+      
       setResult(data)
     } catch (error) {
-      setResult({ error: 'Failed to analyze problem. Please try again.' })
+      const errorData = error.response?.data
+      if (errorData?.upgrade_required) {
+        setResult({ 
+          error: errorData.message,
+          upgrade_required: true 
+        })
+      } else {
+        setResult({ error: 'Failed to analyze problem. Please try again.' })
+      }
     } finally {
       setLoading(false)
     }
@@ -71,7 +96,26 @@ export default function DescribeProblem() {
 
         {loading && <LoadingSpinner />}
 
-        {result && !result.error && (
+        {result && result.upgrade_required && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="glass dark:glass-dark rounded-2xl p-6 border-yellow-500 text-center"
+          >
+            <p className="text-lg text-gray-800 dark:text-white mb-4">{result.error}</p>
+            <a href="/upgrade">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold"
+              >
+                Upgrade Now
+              </motion.button>
+            </a>
+          </motion.div>
+        )}
+
+        {result && !result.error && !result.upgrade_required && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -139,7 +183,7 @@ export default function DescribeProblem() {
           </motion.div>
         )}
 
-        {result?.error && (
+        {result?.error && !result.upgrade_required && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

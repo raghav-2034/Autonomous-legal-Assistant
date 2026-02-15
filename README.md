@@ -22,6 +22,7 @@
 - Dark/Light mode with smooth transitions
 - Fully responsive (mobile, tablet, desktop)
 - Framer Motion powered animations
+- Floating chatbot button for quick access
 
 ## 🚀 Quick Start
 

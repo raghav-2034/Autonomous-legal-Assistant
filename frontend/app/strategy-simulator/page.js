@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { generateStrategy } from '@/lib/api'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAuth } from '@/components/AuthContext'
 
 const strategyTypes = [
   { key: 'conservative', title: 'Conservative Strategy', color: 'from-blue-500 to-cyan-500', icon: '🛡️' },
@@ -12,6 +14,15 @@ const strategyTypes = [
 ]
 
 export default function StrategySimulator() {
+  return (
+    <ProtectedRoute>
+      <StrategySimulatorContent />
+    </ProtectedRoute>
+  )
+}
+
+function StrategySimulatorContent() {
+  const { updateCredits } = useAuth()
   const [situation, setSituation] = useState('')
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -25,9 +36,19 @@ export default function StrategySimulator() {
 
     try {
       const data = await generateStrategy(situation)
+      
+      if (data.credits_remaining !== undefined) {
+        updateCredits(data.credits_remaining)
+      }
+      
       setResult(data)
     } catch (error) {
-      setResult({ error: 'Failed to generate strategies. Please try again.' })
+      const errorData = error.response?.data
+      if (errorData?.upgrade_required) {
+        setResult({ error: errorData.message, upgrade_required: true })
+      } else {
+        setResult({ error: 'Failed to generate strategies. Please try again.' })
+      }
     } finally {
       setLoading(false)
     }

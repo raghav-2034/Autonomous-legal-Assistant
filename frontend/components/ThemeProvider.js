@@ -1,27 +1,13 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext } from 'react'
 
-const ThemeContext = createContext()
+const ThemeContext = createContext({})
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('light')
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'light'
-    setTheme(savedTheme)
-    document.documentElement.classList.toggle('dark', savedTheme === 'dark')
-  }, [])
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light'
-    setTheme(newTheme)
-    localStorage.setItem('theme', newTheme)
-    document.documentElement.classList.toggle('dark', newTheme === 'dark')
-  }
-
+  // Fixed dark theme for premium ocean design
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme: 'dark' }}>
       {children}
     </ThemeContext.Provider>
   )

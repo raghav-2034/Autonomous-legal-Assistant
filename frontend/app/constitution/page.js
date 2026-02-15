@@ -4,8 +4,19 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { explainConstitution } from '@/lib/api'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAuth } from '@/components/AuthContext'
 
 export default function Constitution() {
+  return (
+    <ProtectedRoute>
+      <ConstitutionContent />
+    </ProtectedRoute>
+  )
+}
+
+function ConstitutionContent() {
+  const { updateCredits } = useAuth()
   const [query, setQuery] = useState('')
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -19,9 +30,19 @@ export default function Constitution() {
 
     try {
       const data = await explainConstitution(query)
+      
+      if (data.credits_remaining !== undefined) {
+        updateCredits(data.credits_remaining)
+      }
+      
       setResult(data)
     } catch (error) {
-      setResult({ error: 'Failed to explain provision. Please try again.' })
+      const errorData = error.response?.data
+      if (errorData?.upgrade_required) {
+        setResult({ error: errorData.message, upgrade_required: true })
+      } else {
+        setResult({ error: 'Failed to explain provision. Please try again.' })
+      }
     } finally {
       setLoading(false)
     }

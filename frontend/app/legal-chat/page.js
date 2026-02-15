@@ -4,9 +4,20 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { legalChat } from '@/lib/api'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAuth } from '@/components/AuthContext'
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid'
 
 export default function LegalChat() {
+  return (
+    <ProtectedRoute>
+      <LegalChatContent />
+    </ProtectedRoute>
+  )
+}
+
+function LegalChatContent() {
+  const { user, updateCredits } = useAuth()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,6 +33,12 @@ export default function LegalChat() {
 
     try {
       const data = await legalChat(input)
+      
+      // Update credits if returned
+      if (data.credits_remaining !== undefined) {
+        updateCredits(data.credits_remaining)
+      }
+      
       const aiMessage = { 
         role: 'assistant', 
         content: data.response,
@@ -31,8 +48,9 @@ export default function LegalChat() {
     } catch (error) {
       const errorMessage = { 
         role: 'assistant', 
-        content: 'Sorry, I encountered an error. Please try again.',
-        error: true
+        content: error.response?.data?.message || 'Sorry, I encountered an error. Please try again.',
+        error: true,
+        upgrade_required: error.response?.data?.upgrade_required
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
@@ -94,6 +112,11 @@ export default function LegalChat() {
                       <p className={message.role === 'user' ? 'text-white' : 'text-gray-800 dark:text-gray-200'}>
                         {message.content}
                       </p>
+                      {message.upgrade_required && (
+                        <a href="/upgrade" className="inline-block mt-3 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg text-sm font-semibold hover:opacity-90">
+                          Upgrade Now
+                        </a>
+                      )}
                       {message.disclaimer && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-300 dark:border-gray-600">
                           {message.disclaimer}
